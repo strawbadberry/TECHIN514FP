@@ -1,0 +1,33 @@
+#include <Arduino.h>
+
+// Define pins for sensors
+const int TDS_SENSOR_PIN = 34; // TDS sensor connected to GPIO34
+const int WATER_LEVEL_SENSOR_PIN = 35; // Water level sensor connected to GPIO35
+
+void setup() {
+  Serial.begin(115200); // Start serial communication at 115200 baud rate
+  analogReadResolution(12); // Set ADC resolution to 12 bits for ESP32-S3
+}
+
+void loop() {
+  // Read analog values from sensors
+  int tdsValue = analogRead(TDS_SENSOR_PIN);
+  int waterLevelValue = analogRead(WATER_LEVEL_SENSOR_PIN);
+
+  // Convert ADC readings to voltage (assuming 3.3V reference voltage)
+  float tdsVoltage = tdsValue * (3.3 / 4095.0);
+  float waterLevelVoltage = waterLevelValue * (3.3 / 4095.0);
+
+  // Print the readings to the serial monitor
+  Serial.print("TDS Sensor Value: ");
+  Serial.print(tdsValue);
+  Serial.print(", Voltage: ");
+  Serial.println(tdsVoltage);
+
+  Serial.print("Water Level Sensor Value: ");
+  Serial.print(waterLevelValue);
+  Serial.print(", Voltage: ");
+  Serial.println(waterLevelVoltage);
+
+  delay(1000); // Delay for a second before the next reading
+}
