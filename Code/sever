@@ -1,0 +1,56 @@
+#include <Arduino.h>
+#include <BLEDevice.h>
+#include <BLEUtils.h>
+#include <BLEServer.h>
+
+const int TDS_SENSOR_PIN = A10; // ADC pin, modify according to actual connection
+
+BLEServer* pServer = nullptr;
+BLECharacteristic* pTdsCharacteristic = nullptr;
+
+// UUIDs for BLE service and characteristic
+#define SERVICE_UUID        "1661835d-4e3f-4dc1-9108-ccbc5c93daa0" // Custom service UUID
+#define CHARACTERISTIC_UUID "db928d4d-979f-4823-9e45-72a835e56f87" // Custom characteristic UUID
+
+void setup() {
+  Serial.begin(115200);
+  analogReadResolution(12); // Set ADC resolution to 12 bits (default for ESP32)
+
+  BLEDevice::init("ESP32 TDS Sensor");
+  pServer = BLEDevice::createServer();
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+
+  pTdsCharacteristic = pService->createCharacteristic(
+                        CHARACTERISTIC_UUID,
+                        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY
+                      );
+  pService->start();
+
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  pAdvertising->setScanResponse(true);
+  pAdvertising->setMinPreferred(0x06);
+  pAdvertising->setMinPreferred(0x12);
+  BLEDevice::startAdvertising();
+  Serial.println("Waiting for a client connection to notify...");
+}
+
+void loop() {
+  int sensorValue = analogRead(TDS_SENSOR_PIN);
+  float voltage = sensorValue * (3.3 / 4095.0);
+
+  // Prepare the value to be sent over BLE. You might need to convert the float to a string or a byte array.
+  // Here, let's convert the voltage to a string.
+  char voltageStr[8];
+  dtostrf(voltage, 1, 2, voltageStr); // Convert float to string with 2 decimal places.
+
+  pTdsCharacteristic->setValue(voltageStr);
+  pTdsCharacteristic->notify();
+
+  Serial.print("Sensor Value: ");
+  Serial.print(sensorValue);
+  Serial.print(", Voltage: ");
+  Serial.println(voltage);
+  
+  delay(1000);
+}
